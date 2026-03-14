@@ -1,0 +1,4 @@
+0. go into backend dir w/ cd Backend
+1. python -m venv venv
+2. lookup how to start venv
+3. once inside do pip install -r requirements.txt
