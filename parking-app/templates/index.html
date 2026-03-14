@@ -67,7 +67,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
   <script>
     // ----------------------
     // MAP SETUP
@@ -130,13 +130,29 @@
       }).addTo(map);
 
       const lots = [
-        { id:'M70', name:'M70 Parking Lot', lat:41.108307, lng:-80.652153, total:50, taken:18, info:'YSU M70 Lot' },
+        { id:'M70', name:'M70 Parking Lot', lat:41.108307, lng:-80.652153, total:50, taken:0, info:'YSU M70 Lot' },
         { id:'M30', name:'M30 Parking Deck', lat:41.1075, lng:-80.6478, total:34, taken:22, info:'Student Deck' },
         { id:'Wick', name:'Wick Avenue Deck', lat:41.1068, lng:-80.6460, total:45, taken:40, info:'Student Deck' },
         { id:'M24', name:'M24 Parking Lot', lat:41.1064, lng:-80.6490, total:30, taken:23, info:'Student Lot' },
         { id:'M21', name:'M21 Parking Lot', lat:41.1081, lng:-80.6440, total:28, taken:19, info:'Student Lot' },
         { id:'M18', name:'M18 Parking Lot', lat:41.1091, lng:-80.6455, total:35, taken:32, info:'Student Lot' }
       ];
+
+      // Define API base URL for easy switching
+      const API = "http://127.0.0.1:8000";
+      // Fetch M70 data from backend and update the lots array
+      fetch(`${API}/lots/M70`)
+        .then(res => res.json())
+        .then(data => {
+          const m70 = lots.find(lot => lot.id === "M70");
+          if (m70) {
+            // Map backend fields to frontend
+            m70.total = data.max_capacity;
+            m70.taken = data.occupied_count;
+            updateSummary(m70); // refresh the UI
+          }
+        })
+        .catch(err => console.error("Failed to fetch M70 data:", err));
 
       function updateSummary(lot) {
         document.getElementById('summary-lot-name').textContent = lot.name;
@@ -160,7 +176,14 @@
       function createLotMarker(lot, idx) {
         let color = 'green';
         if (lot.id === 'M70') {
-          color = 'blue';
+          const available = lot.total - lot.taken;
+          if (available > 25) {
+            color = 'green';
+          } else if (available < 15 && available > 0) {
+            color = 'blue';
+          } else if (available <= 0) {
+            color = 'red';
+          }
         } else if (idx % 2 === 0) {
           color = 'green';
         } else {
@@ -172,7 +195,12 @@
         }).addTo(map);
 
         marker.bindPopup(`<b>${lot.name}</b><br>Available: ${lot.total - lot.taken}<br><i>${lot.info}</i>`);
-        marker.on('click', () => updateSummary(lot));
+        marker.on('click', () => {
+          marker.setPopupContent(
+            `<b>${lot.name}</b><br>Available: ${lot.total - lot.taken}<br><i>${lot.info}</i>`
+          );
+          updateSummary(lot);
+        });
         marker.on('popupopen', () => updateSummary(lot));
         return marker;
       }
