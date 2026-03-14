@@ -1,0 +1,18 @@
+[
+  {
+    "device_id": 0,
+    "lot_id": "lot_a"
+  },
+  {
+    "device_id": 1,
+    "lot_id": "lot_a"
+  },
+  {
+    "device_id": 2,
+    "lot_id": "lot_b"
+  },
+  {
+    "device_id": 3,
+    "lot_id": "lot_b"
+  }
+]

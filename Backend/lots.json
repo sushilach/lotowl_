@@ -1,0 +1,16 @@
+[
+  {
+    "lot_id": "lot_a",
+    "name": "Main Lot",
+    "max_capacity": 5,
+    "occupied_count": 0,
+    "last_updated": ""
+  },
+  {
+    "lot_id": "lot_b",
+    "name": "Library Lot",
+    "max_capacity": 8,
+    "occupied_count": 0,
+    "last_updated": ""
+  }
+]

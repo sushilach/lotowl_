@@ -5,18 +5,17 @@ import os
 
 app = Flask(__name__)
 
-# To makes sure data.json is found correctly no matter where you run the file from
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_FILE = os.path.join(BASE_DIR, "data.json")
+SENSORS_FILE = os.path.join(BASE_DIR, "sensors.json")
+LOTS_FILE = os.path.join(BASE_DIR, "lots.json")
 
 
-def load_data():
-    """Load parking data from data.json. If file does not exist or is invalid, return empty list."""
-    if not os.path.exists(DATA_FILE):
+def load_json_file(file_path):
+    if not os.path.exists(file_path):
         return []
 
     try:
-        with open(DATA_FILE, "r") as f:
+        with open(file_path, "r") as f:
             data = json.load(f)
             if isinstance(data, list):
                 return data
@@ -25,10 +24,21 @@ def load_data():
         return []
 
 
-def save_data(data):
-    """Save parking data to data.json."""
-    with open(DATA_FILE, "w") as f:
+def save_json_file(file_path, data):
+    with open(file_path, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def load_sensors():
+    return load_json_file(SENSORS_FILE)
+
+
+def load_lots():
+    return load_json_file(LOTS_FILE)
+
+
+def save_lots(data):
+    save_json_file(LOTS_FILE, data)
 
 
 @app.route("/", methods=["GET"])
@@ -39,106 +49,185 @@ def home():
     }), 200
 
 
-@app.route("/spots", methods=["GET"])
-def get_spots():
-    data = load_data()
+@app.route("/sensors", methods=["GET"])
+def get_sensors():
+    sensors = load_sensors()
     return jsonify({
-        "count": len(data),
-        "spots": data
+        "count": len(sensors),
+        "sensors": sensors
     }), 200
 
 
-@app.route("/spots/<spot_id>", methods=["GET"])
-def get_spot(spot_id):
-    data = load_data()
+@app.route("/lots", methods=["GET"])
+def get_lots():
+    lots = load_lots()
+    return jsonify({
+        "count": len(lots),
+        "lots": lots
+    }), 200
 
-    for spot in data:
-        if spot.get("spot_id") == spot_id:
-            return jsonify(spot), 200
+
+@app.route("/lots/<lot_id>", methods=["GET"])
+def get_lot(lot_id):
+    lots = load_lots()
+
+    for lot in lots:
+        if lot.get("lot_id") == lot_id:
+            total = lot.get("max_capacity", 0)
+            taken = lot.get("occupied_count", 0)
+            available = total - taken
+
+            return jsonify({
+                "lot_id": lot.get("lot_id"),
+                "name": lot.get("name", ""),
+                "max_capacity": total,
+                "occupied_count": taken,
+                "available": available,
+                "last_updated": lot.get("last_updated", "")
+            }), 200
+
+    return jsonify({"error": "Lot not found"}), 404
+
+
+@app.route("/summary", methods=["GET"])
+def get_summary():
+    lots = load_lots()
+    summary = []
+
+    for lot in lots:
+        total = lot.get("max_capacity", 0)
+        taken = lot.get("occupied_count", 0)
+        available = total - taken
+
+        summary.append({
+            "lot_id": lot.get("lot_id"),
+            "name": lot.get("name", ""),
+            "total": total,
+            "taken": taken,
+            "available": available,
+            "last_updated": lot.get("last_updated", "")
+        })
 
     return jsonify({
-        "error": "Spot not found"
-    }), 404
+        "count": len(summary),
+        "lots": summary
+    }), 200
 
 
 @app.route("/update", methods=["POST"])
-def update_spot():
+def update_from_sensor():
     incoming = request.get_json()
 
     if not incoming:
+        return jsonify({"error": "No JSON data received"}), 400
+
+    device_id = incoming.get("deviceId")
+    accuracy = incoming.get("accuracy")
+
+    if device_id is None:
+        return jsonify({"error": "deviceId is required"}), 400
+
+    if accuracy is None:
+        return jsonify({"error": "accuracy is required"}), 400
+
+    try:
+        accuracy = float(accuracy)
+    except (TypeError, ValueError):
+        return jsonify({"error": "accuracy must be a number"}), 400
+
+    # Hardware sends accuracy like 0.75, 0.80, 1.0
+    if accuracy <= 0.60:
         return jsonify({
-            "error": "No JSON data received"
-        }), 400
+            "message": "Detection ignored because accuracy is too low",
+            "deviceId": device_id,
+            "accuracy": accuracy
+        }), 200
 
-    if "spot_id" not in incoming:
-        return jsonify({
-            "error": "spot_id is required"
-        }), 400
+    sensors = load_sensors()
+    matched_sensor = None
 
-    data = load_data()
-    spot_id = incoming["spot_id"]
+    for sensor in sensors:
+        if sensor.get("device_id") == device_id:
+            matched_sensor = sensor
+            break
 
-    # Update existing spot
-    for spot in data:
-        if spot.get("spot_id") == spot_id:
-            spot["is_occupied"] = incoming.get("is_occupied", spot.get("is_occupied", False))
-            spot["device_id"] = incoming.get("device_id", spot.get("device_id", ""))
-            spot["accuracy_score"] = incoming.get("accuracy_score", spot.get("accuracy_score", 0))
-            spot["time_duration"] = incoming.get("time_duration", spot.get("time_duration", 0))
-            spot["last_updated"] = datetime.now().isoformat()
+    if not matched_sensor:
+        return jsonify({"error": "Unknown deviceId"}), 404
 
-            save_data(data)
+    sensor_type = matched_sensor.get("type")
+    lot_id = matched_sensor.get("lot_id")
+
+    if sensor_type not in ["entry", "exit"]:
+        return jsonify({"error": "Sensor type must be 'entry' or 'exit'"}), 400
+
+    lots = load_lots()
+
+    for lot in lots:
+        if lot.get("lot_id") == lot_id:
+            current_count = lot.get("occupied_count", 0)
+            max_capacity = lot.get("max_capacity", 0)
+
+            if sensor_type == "entry":
+                if current_count >= max_capacity:
+                    return jsonify({
+                        "message": "Lot is already full",
+                        "lot_id": lot_id,
+                        "occupied_count": current_count,
+                        "max_capacity": max_capacity
+                    }), 200
+
+                lot["occupied_count"] = current_count + 1
+
+            elif sensor_type == "exit":
+                if current_count <= 0:
+                    return jsonify({
+                        "message": "Lot is already empty",
+                        "lot_id": lot_id,
+                        "occupied_count": current_count
+                    }), 200
+
+                lot["occupied_count"] = current_count - 1
+
+            lot["last_updated"] = datetime.now().isoformat()
+
+            save_lots(lots)
+
+            total = lot.get("max_capacity", 0)
+            taken = lot.get("occupied_count", 0)
+            available = total - taken
 
             return jsonify({
-                "message": "Spot updated successfully",
-                "spot": spot
+                "message": "Lot updated successfully",
+                "deviceId": device_id,
+                "sensor_type": sensor_type,
+                "accuracy": accuracy,
+                "lot": {
+                    "lot_id": lot.get("lot_id"),
+                    "name": lot.get("name", ""),
+                    "max_capacity": total,
+                    "occupied_count": taken,
+                    "available": available,
+                    "last_updated": lot.get("last_updated", "")
+                }
             }), 200
 
-    # Add new spot if it does not exist
-    new_spot = {
-        "spot_id": spot_id,
-        "is_occupied": incoming.get("is_occupied", False),
-        "device_id": incoming.get("device_id", ""),
-        "accuracy_score": incoming.get("accuracy_score", 0),
-        "time_duration": incoming.get("time_duration", 0),
-        "last_updated": datetime.now().isoformat()
-    }
-
-    data.append(new_spot)
-    save_data(data)
-
-    return jsonify({
-        "message": "New spot added successfully",
-        "spot": new_spot
-    }), 201
-
-
-@app.route("/delete/<spot_id>", methods=["DELETE"])
-def delete_spot(spot_id):
-    data = load_data()
-
-    for i, spot in enumerate(data):
-        if spot.get("spot_id") == spot_id:
-            deleted_spot = data.pop(i)
-            save_data(data)
-
-            return jsonify({
-                "message": "Spot deleted successfully",
-                "spot": deleted_spot
-            }), 200
-
-    return jsonify({
-        "error": "Spot not found"
-    }), 404
+    return jsonify({"error": "Matching lot not found for this sensor"}), 404
 
 
 @app.route("/reset", methods=["POST"])
-def reset_data():
-    save_data([])
+def reset_lots():
+    lots = load_lots()
+
+    for lot in lots:
+        lot["occupied_count"] = 0
+        lot["last_updated"] = ""
+
+    save_lots(lots)
+
     return jsonify({
-        "message": "All parking data has been reset"
+        "message": "All parking lots have been reset"
     }), 200
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
