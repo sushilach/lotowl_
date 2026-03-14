@@ -1,0 +1,26 @@
+[
+ {
+  "spot_id": "A1",
+  "is_occupied": false,
+  "device_id": "esp32_01",
+  "accuracy_score": 0.93,
+  "time_duration": 1.2,
+  "last_updated": "2026-03-14T01:40:00"
+ },
+ {
+  "spot_id": "A2",
+  "is_occupied": true,
+  "device_id": "esp32_02",
+  "accuracy_score": 0.88,
+  "time_duration": 2.6,
+  "last_updated": "2026-03-14T01:41:00"
+ },
+ {
+  "spot_id": "A3",
+  "is_occupied": false,
+  "device_id": "esp32_03",
+  "accuracy_score": 0.91,
+  "time_duration": 0.8,
+  "last_updated": "2026-03-14T01:42:00"
+ }
+]
