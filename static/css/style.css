@@ -2,19 +2,19 @@
 html, body { margin: 0; padding: 0; width: 100%; height: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #eef2ff; }
 body { min-height: 100vh; position: relative; }
 #app { position: relative; width: 100%; height: 100vh; overflow: hidden; }
-.landing-screen { width: 100%; height: 100vh; display: grid; place-items: center; background: linear-gradient(180deg, rgba(30, 58, 138, 0.65), rgba(59, 130, 246, 0.65)), url('/static/img/owl.png') center/cover no-repeat; color: #fff; padding: 20px; }
+.landing-screen { width: 100%; height: 100vh; display: grid; place-items: center; background: linear-gradient(180deg, rgba(98, 100, 105, 0.65), rgba(178, 193, 216, 0.65)), url('/static/img/owl.png') center/cover no-repeat; color: #c1baba; padding: 20px; }
 .landing-card { width: 100%; max-width: 430px; background: rgba(255, 255, 255, 0.92); color: #111827; border-radius: 18px; padding: 22px; box-shadow: 0 10px 24px rgba(0,0,0,0.16); text-align: center; }
 .app-label { margin: 0 0 6px; font-size: 0.82rem; letter-spacing: 1px; font-weight: 700; color: #2563eb; text-transform: uppercase; }
 .hero-title { margin: 0 0 8px; font-size: 1.45rem; line-height: 1.2; font-weight: 800; color: #111827; }
 .hero-subtitle { margin: 0 0 20px; color: #4b5563; font-size: 0.95rem; line-height: 1.4; }
 .advance-btn { width: 100%; border: none; border-radius: 12px; background: #1d4ed8; color: #fff; font-size: 0.95rem; font-weight: 700; padding: 12px 14px; cursor: pointer; box-shadow: 0 5px 15px rgba(30,64,175,0.3); }.landing-image-wrap { margin: 10px auto 12px; display: flex; justify-content: center; }
 .landing-image { width: 120px; height: auto; border-radius: 12px; border: 2px solid #1d4ed8; }
-#main-screen { width: 100%; min-height: 100vh; position: relative; background: #f8fbff; padding: 8px 0 100px; display:flex; flex-direction:column; align-items:center; overflow:auto; }
+#main-screen { width: 100%; height: 100vh; min-height: 100vh; position: relative; background: #f8fbff; padding: 8px 0 10px; display:flex; flex-direction:column; align-items:center; overflow:auto; }
 #main-screen .content-wrap { width: min(100%, 420px); margin: 0 auto; padding: 8px; display:flex; flex-direction:column; align-items:center; }
 .top-nav { width: min(100%, 420px); margin: 10px auto 6px; display:flex; justify-content: space-between; align-items:center; gap: 8px; }
-#map { width: 100%; max-width: 420px; height: 460px; background: #fff; overflow:hidden; border-radius: 16px; border: 1px solid #dbeafe; margin: 8px 0; }
+#map { width: 100%; max-width: 420px; height: 490px; background: #fff; overflow:hidden; border-radius: 16px; border: 1px solid #dbeafe; margin: 8px 0; }
 @media (max-width: 460px) {
-  #map { height: 52vh; }
+  #map { height: 55vh; }
 }
 .lot-summary { width: 100%; max-width: 420px; min-height: 150px; margin: 0 auto 12px; background: #fffbe6; border: 1px solid #ffe066; border-radius: 16px; padding: 14px; box-shadow: 0 5px 14px rgba(0,0,0,0.08); font-size: 1rem; line-height: 1.5; }
 .legend-card { position: absolute; left: 50%; transform: translateX(-50%); bottom: 90px; z-index: 20; background: #fffbe6; border: 1px solid #ffe066; backdrop-filter: blur(4px); border-radius: 12px; padding: 8px 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-size: 12px; display:flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: min(94%, 380px); }
