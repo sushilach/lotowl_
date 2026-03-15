@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    container_name: lotowl
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      DATA_DIR: /app/data
+      GUNICORN_WORKERS: 2
+      GUNICORN_THREADS: 4
+    volumes:
+      - lotowl-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  lotowl-data:

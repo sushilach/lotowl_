@@ -6,8 +6,9 @@ import os
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SENSORS_FILE = os.path.join(BASE_DIR, "sensors.json")
-LOTS_FILE = os.path.join(BASE_DIR, "lots.json")
+DATA_DIR = os.environ.get("DATA_DIR", BASE_DIR)
+SENSORS_FILE = os.path.join(DATA_DIR, "sensors.json")
+LOTS_FILE = os.path.join(DATA_DIR, "lots.json")
 
 
 def load_json_file(file_path):
@@ -15,7 +16,7 @@ def load_json_file(file_path):
         return []
 
     try:
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             if isinstance(data, list):
                 return data
@@ -25,8 +26,14 @@ def load_json_file(file_path):
 
 
 def save_json_file(file_path, data):
-    with open(file_path, "w") as f:
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
+
+def env_flag(name, default=False):
+    value = os.environ.get(name, str(default))
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def load_sensors():
@@ -227,4 +234,8 @@ def reset_lots():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(
+        host=os.environ.get("HOST", "0.0.0.0"),
+        port=int(os.environ.get("PORT", "8000")),
+        debug=env_flag("FLASK_DEBUG", True),
+    )

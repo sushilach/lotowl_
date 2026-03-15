@@ -1,0 +1,12 @@
+.git
+.gitignore
+.DS_Store
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+instance/
+fronty.zip
+*.stl
