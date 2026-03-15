@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import os
 import logging
+import threading
 
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
@@ -12,25 +13,35 @@ DATA_DIR = os.environ.get("DATA_DIR", BASE_DIR)
 SENSORS_FILE = os.path.join(DATA_DIR, "sensors.json")
 LOTS_FILE = os.path.join(DATA_DIR, "lots.json")
 
+# Lock to prevent concurrent read/write races when saving/loading JSON files
+_FILE_LOCK = threading.Lock()
+
 
 def load_json_file(file_path):
     if not os.path.exists(file_path):
         return []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            if isinstance(data, list):
-                return data
-            return []
+        with _FILE_LOCK:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
+                return []
     except (json.JSONDecodeError, FileNotFoundError):
         return []
 
 
 def save_json_file(file_path, data):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    # Write atomically: write to temp file, then replace original
+    tmp_path = f"{file_path}.tmp"
+    with _FILE_LOCK:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, file_path)
 
 
 def env_flag(name, default=False):
