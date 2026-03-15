@@ -12,6 +12,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.environ.get("DATA_DIR", BASE_DIR)
 SENSORS_FILE = os.path.join(DATA_DIR, "sensors.json")
 LOTS_FILE = os.path.join(DATA_DIR, "lots.json")
+DEFAULT_SENSORS_FILE = os.path.join(BASE_DIR, "sensors.json")
+DEFAULT_LOTS_FILE = os.path.join(BASE_DIR, "lots.json")
 
 # Lock to prevent concurrent read/write races when saving/loading JSON files
 _FILE_LOCK = threading.Lock()
@@ -50,11 +52,29 @@ def env_flag(name, default=False):
 
 
 def load_sensors():
-    return load_json_file(SENSORS_FILE)
+    sensors = load_json_file(SENSORS_FILE)
+    if sensors:
+        return sensors
+
+    # Seed runtime data directory from repository defaults when mounted volumes are empty.
+    fallback = load_json_file(DEFAULT_SENSORS_FILE)
+    if fallback and SENSORS_FILE != DEFAULT_SENSORS_FILE:
+        save_json_file(SENSORS_FILE, fallback)
+        app.logger.info("Seeded sensors file from defaults: %s", SENSORS_FILE)
+    return fallback
 
 
 def load_lots():
-    return load_json_file(LOTS_FILE)
+    lots = load_json_file(LOTS_FILE)
+    if lots:
+        return lots
+
+    # Seed runtime data directory from repository defaults when mounted volumes are empty.
+    fallback = load_json_file(DEFAULT_LOTS_FILE)
+    if fallback and LOTS_FILE != DEFAULT_LOTS_FILE:
+        save_json_file(LOTS_FILE, fallback)
+        app.logger.info("Seeded lots file from defaults: %s", LOTS_FILE)
+    return fallback
 
 
 def save_lots(data):
@@ -140,11 +160,11 @@ def update_from_sensor():
     if not incoming:
         return jsonify({"error": "No JSON data received"}), 400
 
-    device_id = incoming.get("deviceId")
-    accuracy = incoming.get("accuracy")
+    device_id = incoming.get("deviceId", incoming.get("device_id"))
+    accuracy = incoming.get("accuracy", incoming.get("confidence"))
 
     if device_id is None:
-        return jsonify({"error": "deviceId is required"}), 400
+        return jsonify({"error": "deviceId (or device_id) is required"}), 400
 
     if accuracy is None:
         return jsonify({"error": "accuracy is required"}), 400
@@ -163,11 +183,22 @@ def update_from_sensor():
             "accuracy": accuracy
         }), 200
 
+    try:
+        device_id = str(int(device_id))
+    except (TypeError, ValueError):
+        device_id = str(device_id)
+
     sensors = load_sensors()
     matched_sensor = None
 
     for sensor in sensors:
-        if sensor.get("device_id") == device_id:
+        sensor_device_id = sensor.get("device_id")
+        try:
+            sensor_device_id = str(int(sensor_device_id))
+        except (TypeError, ValueError):
+            sensor_device_id = str(sensor_device_id)
+
+        if sensor_device_id == device_id:
             matched_sensor = sensor
             break
 

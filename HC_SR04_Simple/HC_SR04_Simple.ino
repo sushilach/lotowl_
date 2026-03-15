@@ -7,6 +7,7 @@
 
 const char* ssid = "YSU_event_HackYSU";
 const char* password = "HackYSU2026!";
+
 const char* URL = "https://app.lotowl.info/update";
 
 
