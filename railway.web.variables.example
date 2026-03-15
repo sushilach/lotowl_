@@ -1,0 +1,24 @@
+# Add these variables to the Railway WEB SERVICE (not the DB service).
+# Use Railway Variable References where possible.
+
+# Required app variables
+DATABASE_URL=${{MySQL.MYSQL_URL}}
+FLASK_DEBUG=false
+PORT=${{RAILWAY_PORT}}
+HOST=0.0.0.0
+
+# Optional app behavior
+MIN_DETECTION_ACCURACY=0.50
+DATA_DIR=/app/data
+GUNICORN_WORKERS=2
+GUNICORN_THREADS=4
+
+# Optional if your app code reads split DB fields
+DB_HOST=${{MySQL.MYSQLHOST}}
+DB_PORT=${{MySQL.MYSQLPORT}}
+DB_NAME=${{MySQL.MYSQLDATABASE}}
+DB_USER=${{MySQL.MYSQLUSER}}
+DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+
+# If private MYSQL_URL cannot be reached from your setup, use this fallback:
+# DATABASE_URL=${{MySQL.MYSQL_PUBLIC_URL}}

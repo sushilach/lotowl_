@@ -4,6 +4,9 @@ import json
 import os
 import logging
 import threading
+import pymysql
+
+from config.db_config import get_database_url, get_mysql_settings
 
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
@@ -59,6 +62,75 @@ def env_float(name, default):
         return float(default)
 
 
+def check_db_connection_status():
+    database_url = get_database_url()
+    mysql_settings = get_mysql_settings()
+
+    if mysql_settings.get("scheme") not in {"mysql", "mysql+pymysql"}:
+        return {
+            "ok": False,
+            "message": "DATABASE_URL is not configured for MySQL.",
+            "database_url": database_url,
+            "details": "Expected a mysql:// URL from Railway (MYSQL_URL or MYSQL_PUBLIC_URL).",
+        }
+
+    host = mysql_settings.get("host")
+    port = mysql_settings.get("port") or 3306
+    user = mysql_settings.get("user")
+    password = mysql_settings.get("password")
+    database = mysql_settings.get("database")
+
+    if not host or not user or not database:
+        return {
+            "ok": False,
+            "message": "DATABASE_URL is missing required values.",
+            "database_url": database_url,
+            "details": "Host, user, and database are required.",
+        }
+
+    try:
+        conn = pymysql.connect(
+            host=host,
+            port=int(port),
+            user=user,
+            password=password,
+            database=database,
+            connect_timeout=8,
+            read_timeout=8,
+            write_timeout=8,
+            cursorclass=pymysql.cursors.DictCursor,
+            ssl={"ssl": {}} if os.environ.get("MYSQL_USE_SSL", "true").lower() == "true" else None,
+        )
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 AS ok")
+            result = cur.fetchone()
+            cur.execute("SHOW TABLES")
+            tables = cur.fetchall()
+        conn.close()
+
+        return {
+            "ok": True,
+            "message": "Database connection successful.",
+            "database_url": database_url,
+            "details": f"Ping returned {result}. Tables found: {len(tables)}",
+            "host": host,
+            "port": port,
+            "database": database,
+            "user": user,
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "message": "Database connection failed.",
+            "database_url": database_url,
+            "details": str(exc),
+            "host": host,
+            "port": port,
+            "database": database,
+            "user": user,
+        }
+
+
 def load_sensors():
     sensors = load_json_file(SENSORS_FILE)
     if sensors:
@@ -92,6 +164,12 @@ def save_lots(data):
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/db-status", methods=["GET"])
+def db_status_page():
+    status = check_db_connection_status()
+    return render_template("db_status.html", status=status), (200 if status.get("ok") else 500)
 
 
 @app.route("/sensors", methods=["GET"])

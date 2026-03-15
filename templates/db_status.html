@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LotOwl DB Status</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --ok: #16a34a;
+      --bad: #dc2626;
+      --accent: #2563eb;
+      --border: #374151;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 0%, #1e293b, var(--bg));
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(720px, 100%);
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.4rem;
+      letter-spacing: 0.2px;
+    }
+    p { margin: 0; }
+    .badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.84rem;
+      color: #fff;
+    }
+    .badge-ok { background: var(--ok); }
+    .badge-bad { background: var(--bad); }
+    .grid {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 8px 12px;
+      align-items: start;
+    }
+    .label {
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .value {
+      word-break: break-word;
+      color: var(--text);
+    }
+    .details {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      white-space: pre-wrap;
+      color: #dbeafe;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+    .hint {
+      margin-top: 16px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    .btn {
+      margin-top: 14px;
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Database Connection Status</h1>
+    <p>Live check from this web service instance.</p>
+    <span class="badge {% if status.ok %}badge-ok{% else %}badge-bad{% endif %}">{% if status.ok %}CONNECTED{% else %}FAILED{% endif %}</span>
+
+    <div class="grid">
+      <div class="label">Message</div><div class="value">{{ status.message }}</div>
+      <div class="label">Database URL</div><div class="value">{{ status.database_url }}</div>
+      <div class="label">Host</div><div class="value">{{ status.host or 'N/A' }}</div>
+      <div class="label">Port</div><div class="value">{{ status.port or 'N/A' }}</div>
+      <div class="label">Database</div><div class="value">{{ status.database or 'N/A' }}</div>
+      <div class="label">User</div><div class="value">{{ status.user or 'N/A' }}</div>
+    </div>
+
+    <div class="details">{{ status.details }}</div>
+
+    <a class="btn" href="/db-status">Run Check Again</a>
+    <p class="hint">Tip: If this fails on Railway, verify DATABASE_URL points to MySQL.MYSQL_URL in your web service variables.</p>
+  </div>
+</body>
+</html>
