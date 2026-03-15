@@ -275,6 +275,7 @@
     }
 
     function startApp() {
+      try { localStorage.setItem('lotowl_session', '1'); } catch (e) { /* ignore */ }
       document.getElementById('landing').classList.add('hidden');
       document.getElementById('main-screen').classList.remove('hidden');
       document.getElementById('legend').classList.remove('hidden');
